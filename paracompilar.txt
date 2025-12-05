@@ -1,0 +1,2 @@
+gcc -Wall -Wshadow -no-pie -o myshell myshell.c libparser.a
+gcc -Wall -Wextra test.c libparser.a –o test -static
