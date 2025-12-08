@@ -58,30 +58,35 @@ void exeCommand(tline *line){
     }
 }
 
-void exeCD(tline *line) {
-    char *home;
-    int pwd;
+void exeCD(tline *line){
 
-    if (line->commands[0].argc == 1) {
-        home = getenv("HOME");
-        if (home == NULL) {
-            fprintf(stderr, "error en HOME\n");
-        } else {
-            pwd = chdir(home);
-            if (pwd < 0) {   // chdir < 0 -> error
-                fprintf(stderr, "Error HOME\n");
-            }
+	char *home;
+	int e;
+
+	if (line->commands[0].argc==1) {
+		home=getenv("HOME");
+
+		if (home==NULL){
+			fprintf(stderr,"error HOME\n");
         }
-    }
-    else if (line->commands[0].argc == 2) {
-        pwd = chdir(line->commands[0].argv[1]);
-        if (pwd < 0) {
-            fprintf(stderr, "error\n");
+        else
+		{
+			e=chdir(home);
+			if (e<0)
+				fprintf(stderr,"error HOME\n");
+		}	
+	}
+	else if (line->commands[0].argc==2) {
+		e=chdir(line->commands[0].argv[1]);
+		if (e<0) {
+			fprintf(stderr,"%s: error cd\n",line->commands[0].argv[1]);
         }
-    }
-    else {
-        fprintf(stderr, "Error, Uso cd: directorio\n");
-    }
+	}
+	else
+	{
+		fprintf(stderr,"Usage: cd dir\n");
+	}
+	
 }
 
 void exeExit(tline *line){
