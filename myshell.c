@@ -12,7 +12,9 @@
 #define SIZE 512
 
 void handler(int sig) {
-    while (waitpid(-1, NULL, WNOHANG) > 0) {}
+    while (waitpid(-1, NULL, WNOHANG) > 0) {
+		
+	}
 }
 
 void closePipes(int (*p)[2], int n){
