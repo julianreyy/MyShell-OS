@@ -25,6 +25,8 @@ void closePipes(int p[NUMPIPES][2], int n){
 
 void exeCommand(tline *line){
     int i;
+    int fdin;
+    int fdout;
     pid_t pid; //Para que se ejecute el mandato interno de myshell, siendo este el padre
     int p[NUMPIPES][2]; //Numero de pipes máximos, junto a entrada 1 salida 0
 	pid_t pids[10];
@@ -39,7 +41,7 @@ void exeCommand(tline *line){
             exit(EXIT_FAILURE);
         }
         if (pid == 0){
-			if (!line->backgroung) {
+			if (!line->background) {
 				signal(SIGINT, SIG_DFL);
 			}
 			if (line->ncommands > 1) {
@@ -55,7 +57,7 @@ void exeCommand(tline *line){
             	}
             	closePipes(p, line->ncommands-1);
 			}
-			if (i == 0) && (line->redirect_input != NULL) {
+			if ((i == 0) && (line->redirect_input != NULL)) {
 				fdin = open(line->redirect_input, O_RDONLY);
 				if (fdin < 0)
 				{
@@ -65,18 +67,18 @@ void exeCommand(tline *line){
 				dup2(fdin, 0);
 				close(fdin);
 			}
-			if (i == (line->ncommands - 1)) && (line->redirect_output != NULL) {
-				fdout = create(line->redirect_output, 0664);
+			if ((i == (line->ncommands - 1)) && (line->redirect_output != NULL)) {
+				fdout = creat(line->redirect_output, 0664);
 				if (fdout < 0)
 				{
 					fprintf(stderr, "%s: No puedo abrir el fichero\n", line->redirect_output);
 					exit(1);
 				}
-				dup2(fdout, 0);
+				dup2(fdout, 1);
 				close(fdout);
 			}
-			if (i == (line->ncommands - 1)) && (line->redirect_error != NULL) {
-				fdout = create(line->redirect_error, 0664);
+			if ((i == (line->ncommands - 1)) && (line->redirect_error != NULL)) {
+				fdout = creat(line->redirect_error, 0664);
 				if (fdout < 0)
 				{
 					fprintf(stderr, "%s: No puedo abrir el fichero\n",line->redirect_error);
@@ -151,16 +153,23 @@ void exeExit(tline *line){
 }
 
 void exeUmask(tline *line){
-	mode_t new_mask;
-	if (line->commands[0].argv[1] == NULL) {
-		old_mask = umask(0);
-		umask(old_mask);
-		printf("%04o\n", old_mask);
-	}
-	else {
-		new_massk = strtoul(line->commands[0].argv[1], 0, 8);
-		umask(new_mask);
-	}
+    mode_t new_mask;
+    mode_t old_mask;
+    char *end;
+
+    if (line->commands[0].argv[1] == NULL) {
+        old_mask = umask(0);
+        umask(old_mask);
+        printf("%04o\n", old_mask);
+    } else {
+        unsigned long val = strtoul(line->commands[0].argv[1], &end, 8);
+        if (*end != '\0') {
+            fprintf(stderr, "umask: valor octal inválido\n");
+            return;
+        }
+        new_mask = (mode_t)val;
+        umask(new_mask);
+    }
 }
 
 
