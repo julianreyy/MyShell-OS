@@ -142,12 +142,25 @@ void exeCD(tline *line){
 }
 
 void exeExit(tline *line){
-    if (line->commands[0].argc == 1){
+    if (line->commands[0].argv[1] == NULL){
         exit(0);
     }
     else {
         exit(atoi(line->commands[0].argv[1]));
     }
+}
+
+void exeUmask(tline *line){
+	mode_t new_mask;
+	if (line->commands[0].argv[1] == NULL) {
+		old_mask = umask(0);
+		umask(old_mask);
+		printf("%04o\n", old_mask);
+	}
+	else {
+		new_massk = strtoul(line->commands[0].argv[1], 0, 8);
+		umask(new_mask);
+	}
 }
 
 
@@ -170,6 +183,9 @@ int main(int argc, char *argv[])
                 	}
                 	else if (strcmp(line->commands[0].argv[0], "exit") == 0){
                     	exeExit(line);
+                	}
+					else if (strcmp(line->commands[0].argv[0], "umask") == 0){
+                    	exeUmask(line);
                 	}
                 	else exeCommand(line);
             	}
