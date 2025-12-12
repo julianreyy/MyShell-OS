@@ -172,8 +172,6 @@ void exeUmask(tline *line){
     }
 }
 
-
-
 int main(int argc, char *argv[])
 {
     tline *line;
