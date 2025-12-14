@@ -11,10 +11,105 @@
 
 #define SIZE 512
 
-void handler(int sig) {
-    while (waitpid(-1, NULL, WNOHANG) > 0) {
-		
+typedef struct job {
+	pid_t pid;
+	char buffer[1024];
+	job *next;
+}
+
+typedef struct jobs {
+	job *head;
+}
+
+void insert(pid_t, char buffer[1023]) {
+	job * n;
+	n = malloc(sizeof (job));
+	n->pid = pid;
+	strcpy(n->buffer, buffer);
+	n->next = jobs->head;
+	jobs->head = n;
+}
+
+void elim(pid_t pid) {
+	job * aux;
+	job * ant;
+	if (jobs->head != NULL) {
+		if (jobs->head->pid == pid) {
+			aux = jobs->head;
+			jobs->head = aux->next;
+			free(aux);
+		}
+		else {
+			ant = jobs->head;
+			aux = ant->next;
+			while (aux != NULL) && (pid != aux->pid) {
+				ant = aux;
+				aux = aux->next;
+			}
+			if (aux != NULL) {
+				ant->next = aux->next;
+				free(aux);
+			}
+		} 
 	}
+}
+
+void exeJobs(tline *line) {
+	int i = 1;
+	jobs *aux;
+	aux = jobs->head;
+	while(aux != NULL) {
+		printf("[%d] running %s\n", aux->buffer);
+		aux = aux->next;
+		i++;
+	}
+}
+
+int get_pid_jobs(int n, char, *buffer) {
+	pid_t pid = -1;
+	int i = 1
+	job *aux;
+	aux = job->head;
+	while ((aux != NULL) && (i != n)) {
+		aux = aux->next;
+		i++;
+	}
+	if (aux != NULL) {
+		pid = aux->pid;
+		strcpy(buffer, aux->buffer);
+	}
+	return pid;
+}
+
+void exeBg(tline *line) {
+	if (jobs->head == NULL) {
+		fprintf(stderr, "No hay proceso");
+	}
+	else {
+		if (line->commands[0]).argv[1] == NULL) {
+			pid = jobs->head->pid;
+			strcpy(buffer, jobs->head->buffer);
+		}
+		else {
+			pid = get_pid_job(atoi(line->commands[0].argv[1]), buffer);
+		}
+		if (pid > 0) {
+			printf("%d\n", buffer);
+			waitpid(pid, NULL, 0);
+			elim(pid);
+		}
+		else {
+			printf("error pid")
+		}
+	}
+}
+
+void handler(int sig) {
+    pid = waitpid(-1, NULL, WNOHANG);
+	if (pid > 0) {
+		elim(pid);
+	}	
+	
 }
 
 void closePipes(int (*p)[2], int n){
@@ -25,7 +120,7 @@ void closePipes(int (*p)[2], int n){
     }
 }
 
-void exeCommand(tline *line){
+void exeCommand(tline *line, char * buffer){
     int i;
     int fdin, fdout;
     pid_t pid;
@@ -136,6 +231,7 @@ void exeCommand(tline *line){
         for (i = 0; i < line->ncommands; i++)
             printf("%d ", pids[i]);
         printf("\n");
+		add(pids[tline->ncommands - 1], buffer);
     }
 }
 
@@ -197,9 +293,13 @@ int main(int argc, char *argv[])
 {
     tline *line;
     char linea[SIZE];
+	jobs *jobs;
 
-    signal(SIGINT, SIG_IGN);
+    signal(SIGINT, SIG_IGN); //probar y hacer con SIGTSTP
     signal(SIGCHLD, handler);
+
+	jobs = malloc(sizeof(jobs));
+	jobs->head = NULL;
 
     printf("msh> ");
 
@@ -211,9 +311,13 @@ int main(int argc, char *argv[])
                     if (strcmp(line->commands[0].argv[0], "cd") == 0)
                         exeCD(line);
                     else if (strcmp(line->commands[0].argv[0], "exit") == 0)
-                        exeExit(line);
+                        exeExit(line); //se puede eliminar la función
                     else if (strcmp(line->commands[0].argv[0], "umask") == 0)
                         exeUmask(line);
+					else if (strcmp(line->commands[0].argv[0], "jobs") == 0)
+                        exeJobs(line);
+					else if (strcmp(line->commands[0].argv[0], "bg") == 0)
+                        exeBg(line);
                     else
                         exeCommand(line);
                 }
@@ -221,5 +325,6 @@ int main(int argc, char *argv[])
             printf("msh> ");
         }
     }
+	free(jobs);
     return 0;
 }
