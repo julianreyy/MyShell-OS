@@ -81,7 +81,7 @@ int get_pid_jobs(int n, char, *buffer) {
 	return pid;
 }
 
-void exeBg(tline *line) {
+void exeBg(tline *line) { //es fg
 	if (jobs->head == NULL) {
 		fprintf(stderr, "No hay proceso");
 	}
