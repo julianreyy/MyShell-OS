@@ -8,7 +8,6 @@
 #include <sys/stat.h>   // Información de archivos y permisos (umask, open)
 #include <fcntl.h>      // Control de archivos (O_RDONLY, O_CREAT, etc.)
 #include <signal.h>     // Gestión de señales (signal, kill, SIGINT, SIGCHLD)
-#include <errno.h>      // Gestión de errores (perror usa errno)
 
 #define SIZE 512        // Define una constante de tamaño 512 para buffers de lectura
 
