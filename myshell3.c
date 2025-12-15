@@ -102,7 +102,7 @@ void handler(int sig) {
     }
 }
 
-void exeJobs() {
+void execute_jobs() {
     int i = 1; // contador
     job *aux = jobs_list->head; // puntero auxiliar
     while(aux != NULL) { // recorre toda la lista de trabajos
@@ -112,7 +112,7 @@ void exeJobs() {
     }
 }
 
-void exeBg(tline *line) {
+void execute_bg(tline *line) {
     job *j = NULL; // puntero a trabajo
     
     if (jobs_list->head == NULL) { // comprueba si hay lista de mandatos
@@ -138,7 +138,7 @@ void exeBg(tline *line) {
     }
 }
 
-void exeCD(tline *line){
+void execute_cd(tline *line){
     char *dir; // Puntero a directorio
     char cwd[1024]; // Buffer para la ruta
     int e; // controlador de error
@@ -149,7 +149,7 @@ void exeCD(tline *line){
     }
     e = chdir(dir); // cambia el directorio actual
     if (e < 0) { // comprueba si devuelve error
-        perror("cd");
+        fprintf(stderr, "cd: No ha sido posible cambiar el directorio\n");
     } 
     else {
         if (getcwd(cwd, sizeof(cwd)) != NULL) {// obtiene el directorio actual
@@ -158,7 +158,7 @@ void exeCD(tline *line){
     }
 }
 
-void exeUmask(tline *line){
+void execute_umask(tline *line){
     mode_t old;
     char *end; // Puntero para control de errores en conversión
     unsigned long val; //valor long positivo
@@ -191,7 +191,7 @@ void execute_man(tline *line, char *full_line_str){
         p = malloc(sizeof(int[2]) * npipes); // reserva memoria para los pipes
         for (i = 0; i < npipes; i++) { // Bucle que recorre los pipe
             if (pipe(p[i]) < 0) { // comprueba que los pipe estén bien
-                perror("pipe");
+                fprintf(stderr, "pipe:Ha surgido un error al crear un pipe\n");;
                 exit(1);
             }
         }
@@ -200,7 +200,7 @@ void execute_man(tline *line, char *full_line_str){
     for (i = 0; i < line->ncommands; i++) { // bucle que recorre el número de mandatos
         pid = fork(); // crea un hijo    
         if (pid < 0) { // comprueba si hay error al hacer fork
-            perror("fork");
+            fprintf(stderr, "fork: error al hacer el fork\n");
             exit(1);
         }
 
@@ -315,13 +315,13 @@ int main() {
             line = tokenize(buffer); // recopila info de la línea        
             if (line != NULL && line->ncommands > 0) { // comprueba que se han guardado mandatos
                 if (strcmp(line->commands[0].argv[0], "cd") == 0) //comprueba que el mandato sea cd
-                    exeCD(line);
+                    execute_cd(line);
                 else if (strcmp(line->commands[0].argv[0], "umask") == 0) //comprueba que el mandato sea umask
-                    exeUmask(line);
+                    execute_umask(line);
                 else if (strcmp(line->commands[0].argv[0], "jobs") == 0) //comprueba que el mandato sea jobs
-                    exeJobs();
+                    execute_jobs();
                 else if (strcmp(line->commands[0].argv[0], "bg") == 0) //comprueba que el mandato sea bg
-                    exeBg(line);
+                    execute_bg(line);
                 else if (strcmp(line->commands[0].argv[0], "exit") == 0) // comprueba si se quiere salir
                     break;      // sale del bucle
                 else
@@ -330,8 +330,6 @@ int main() {
         }
         printf("msh> ");
     }
-    
-    // --- CORRECCIÓN 5: Typo en el nombre de variable ---
-    free(jobs_list); //borra espacio de memoria dinámica (antes ponía job_list)
+    free(jobs_list); //borra espacio de memoria dinámica
     return 0;
 }
