@@ -10,24 +10,25 @@
 #include <signal.h>
 #include <errno.h>
 
-#define SIZE 512        
-// Define una constante cualquiera de tamaño 512
+#define SIZE 512
 
 typedef struct job { // Define un nodo trabajo
     pid_t pid; // pid del trabajo
     char buffer[1024]; // buffer de caracteres que guarda el mandato
     char estado; // estado del trabajo ( R: Running, S: Stopped)
     struct job *next; // Puntero al siguiente nodo de la lista
-} job;                  
+} job;
 
 typedef struct jobList { // Define la estructura de una lista de trabajos
     job *head; // Puntero al primer elemento
-} jobList;                 
+} jobList;
 
-
+// --- CORRECCIÓN 1: Variable Global ---
+// Sacamos jobs_list del main para que las otras funciones la vean.
+jobList *jobs_list; 
 
 void insert_job(pid_t pid, char *buffer, char estado) {
-    job *n = malloc(sizeof(job)); // reserva memoria para un nuevo trabajo    
+    job *n = malloc(sizeof(job)); // reserva memoria para un nuevo trabajo
     n->pid = pid; // asigna PID al nuevo nodo
     strcpy(n->buffer, buffer); // le añade el mandato a través del buffer
     n->estado = estado; // asigna el estado (R ó S)
@@ -61,7 +62,8 @@ job *get_job_by_index(int n) {
     }
     if (n == 0){ // si n es cero se devuelve el último trabajo añadido que es el primero de la lista
         return aux; 
-        ]
+    } // --- CORRECCIÓN 2: Tenías un ']' aquí ---
+    
     while (aux != NULL && i < n) { // mientras haya nodos en la lista y no se haya llegado a n
         aux = aux->next; // avanza al siguiente nodo
         i++; // incrementa el contador
@@ -78,17 +80,21 @@ void handler(int sig) {
             elim_job(pid); // elimina el proceso de la lista de trabajos
         }
         else if (WIFSTOPPED(status)) {  // comprueba si el proceso fue parado
+            j = jobs_list->head; // Reiniciamos el puntero j para buscar desde el principio
             while(j){ // mientras haya trabajos
                 if(j->pid == pid) { // si coincide el PID
                     j->estado = 'S'; // cambia estado a Stopped
+                    break; // Encontrado, salimos del while interno
                 }
                 j = j->next; // avanza al siguiente
             }
         }
         else if (WIFCONTINUED(status)) { // comprueba si el proceso fue reanudado
+            j = jobs_list->head; // Reiniciamos el puntero j
             while(j){ // mientras haya trabajos
                 if(j->pid == pid) { // si coincide el PID
                     j->estado = 'R'; // cambia estado a Running
+                    break; // Encontrado, salimos del while interno
                 }
                 j = j->next; // avanza al siguiente
             }
@@ -167,10 +173,10 @@ void exeUmask(tline *line){
             fprintf(stderr, "umask: valor inválido\n");
         }
         else {
-        umask((mode_t)val);  // pone la máscara nueva
+            umask((mode_t)val);  // pone la máscara nueva
         }
     }
-    return
+    return; // --- CORRECCIÓN 3: Faltaba punto y coma ---
 }
 
 void execute_man(tline *line, char *full_line_str){ 
@@ -223,7 +229,8 @@ void execute_man(tline *line, char *full_line_str){
             if (i == 0 && line->redirect_input != NULL) { // comprueba si es el primer mandato y hay redirección de entrada
                 fde = open(line->redirect_input, O_RDONLY); // abre el archivo solo para lectura
                 if (fde < 0) { // comprueba si hay error
-                    fprintf("%s: Error. %s\n", line->redirect_input, strerror(errno));
+                    // --- CORRECCIÓN 4: fprintf necesita stderr como primer argumento ---
+                    fprintf(stderr, "%s: Error. %s\n", line->redirect_input, strerror(errno));
                     exit(1); 
                 }
                 dup2(fde, 0); // redirige la entrada estándar
@@ -233,7 +240,8 @@ void execute_man(tline *line, char *full_line_str){
                 if (line->redirect_output != NULL) { // mira si hay redirección de salida
                     fds = creat(line->redirect_output, 0644); // crea un fichero con unos permisos comunes rw-r--r--
                     if (fds < 0) { // comprueba si hay error
-                        fprintf("%s: Error. %s\n", line->redirect_output, strerror(errno)); 
+                         // --- CORRECCIÓN 4 (b) ---
+                        fprintf(stderr, "%s: Error. %s\n", line->redirect_output, strerror(errno)); 
                         exit(1); 
                     }
                     dup2(fds, 1); // redirige la salida estándar
@@ -242,7 +250,8 @@ void execute_man(tline *line, char *full_line_str){
                 if (line->redirect_error != NULL) { // comprueba si hay redirección de error
                     fderr = creat(line->redirect_error, 0644); // crea un fichero con unos permisos comunes rw-r--r--
                     if (fderr < 0) { // comprueba si hay error
-                        fprintf("%s: Error. %s\n", line->redirect_error, strerror(errno)); 
+                         // --- CORRECCIÓN 4 (c) ---
+                        fprintf(stderr, "%s: Error. %s\n", line->redirect_error, strerror(errno)); 
                         exit(1); 
                     }
                     dup2(fderr, 2); // redirige la salida de error
@@ -258,27 +267,28 @@ void execute_man(tline *line, char *full_line_str){
             exit(1);
         }
     }
-    else {
-        if (npipes > 0) {  // comprueba si se crearon pipes
-            for (i = 0; i < npipes; i++) { // recorre todos los pipes
-                close(p[i][0]); // cierra lectura
-                close(p[i][1]); // cierra escritura
-            }
-            free(p);// libera la memoria de los pipes
+    // El 'else' estaba huérfano antes porque faltaba cerrar bloques correctamente o el parser se confundió
+    // Aquí el bloque padre (que no está en un else respecto al fork, sino fuera del bucle de creación)
+    
+    if (npipes > 0) {  // comprueba si se crearon pipes
+        for (i = 0; i < npipes; i++) { // recorre todos los pipes
+            close(p[i][0]); // cierra lectura
+            close(p[i][1]); // cierra escritura
         }
-        if (line->background) { // comprueba si el mandato se lanzó a background
-            printf("[%d]\n", pid); // se imprime el PID del mandato
-            insert_job(pid, full_line_str, 'R'); // se añade a la lista como Running
-        } 
-        else { // el mandato se lanzó a foreground
-            waitpid(pid, &status, WUNTRACED); // espera hasta que el último hijo termine
-            if (WIFSTOPPED(status)) {       // comprueba si el hijo se detuvo con Ctrl+Z
-                printf("\n[%d]+ Stopped %s\n", pid, full_line_str);
-                insert_job(pid, full_line_str, 'S'); // se añade a la lista como Stopped
-            }
-            for (i = 0; i < line->ncommands - 1; i++) { // bucle para el resto de hijos que han finalizado
-                wait(NULL);
-            }
+        free(p);// libera la memoria de los pipes
+    }
+    if (line->background) { // comprueba si el mandato se lanzó a background
+        printf("[%d]\n", pid); // se imprime el PID del mandato
+        insert_job(pid, full_line_str, 'R'); // se añade a la lista como Running
+    } 
+    else { // el mandato se lanzó a foreground
+        waitpid(pid, &status, WUNTRACED); // espera hasta que el último hijo termine
+        if (WIFSTOPPED(status)) {       // comprueba si el hijo se detuvo con Ctrl+Z
+            printf("\n[%d]+ Stopped %s\n", pid, full_line_str);
+            insert_job(pid, full_line_str, 'S'); // se añade a la lista como Stopped
+        }
+        for (i = 0; i < line->ncommands - 1; i++) { // bucle para el resto de hijos que han finalizado
+            wait(NULL);
         }
     }
 }
@@ -287,9 +297,11 @@ void execute_man(tline *line, char *full_line_str){
 int main() {
     char buffer[SIZE]; // buffer para leer mandatos
     tline *line; // puntero a tline
-    jobList *jobs_list; // puntero a la lista de trabajos
+    
+    // jobs_list ya es global, solo reservamos memoria
     jobs_list = malloc(sizeof(jobList)); // reserva memoria para la lista
     jobs_list->head = NULL; // inicializa a NULL
+    
     signal(SIGINT, SIG_IGN); // desactivar Ctrl+C
     signal(SIGTSTP, SIG_IGN); // desactivar Ctrl+Z
     signal(SIGCHLD, handler); // manejador de señales de procesos hijo
@@ -297,6 +309,9 @@ int main() {
     printf("msh> ");
     while (fgets(buffer, SIZE, stdin)) { // mientras reciba líneas
         if (strlen(buffer) > 0) { // si el buffer no está vacío
+            // Eliminar el salto de línea al final si existe (buena práctica en shells)
+            if (buffer[strlen(buffer)-1] == '\n') buffer[strlen(buffer)-1] = '\0';
+            
             line = tokenize(buffer); // recopila info de la línea        
             if (line != NULL && line->ncommands > 0) { // comprueba que se han guardado mandatos
                 if (strcmp(line->commands[0].argv[0], "cd") == 0) //comprueba que el mandato sea cd
@@ -315,6 +330,8 @@ int main() {
         }
         printf("msh> ");
     }
-    free(job_list); //borra espacio de memoria dinámica
+    
+    // --- CORRECCIÓN 5: Typo en el nombre de variable ---
+    free(jobs_list); //borra espacio de memoria dinámica (antes ponía job_list)
     return 0;
 }
