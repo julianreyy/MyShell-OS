@@ -15,7 +15,7 @@
 typedef struct job { // Define un nodo trabajo
     pid_t pid; // pid del trabajo
     char buffer[1024]; // buffer de caracteres que guarda el mandato
-    char estado; // estado del trabajo ( R: Running, S: Stopped)
+    char estado; // estado del trabajo  R: Running S: Stopped
     struct job *next; // Puntero al siguiente nodo de la lista
 } job;
 
@@ -23,7 +23,6 @@ typedef struct jobList { // Define la estructura de una lista de trabajos
     job *head; // Puntero al primer elemento
 } jobList;
 
-// --- CORRECCIÓN 1: Variable Global ---
 // Sacamos jobs_list del main para que las otras funciones la vean.
 jobList *jobs_list; 
 
@@ -62,8 +61,7 @@ job *get_job_by_index(int n) {
     }
     if (n == 0){ // si n es cero se devuelve el último trabajo añadido que es el primero de la lista
         return aux; 
-    } // --- CORRECCIÓN 2: Tenías un ']' aquí ---
-    
+    }
     while (aux != NULL && i < n) { // mientras haya nodos en la lista y no se haya llegado a n
         aux = aux->next; // avanza al siguiente nodo
         i++; // incrementa el contador
@@ -103,14 +101,21 @@ void handler(int sig) {
 }
 
 void execute_jobs() {
-    int i = 1; // contador
-    job *aux = jobs_list->head; // puntero auxiliar
-    while(aux != NULL) { // recorre toda la lista de trabajos
-        printf("[%d] %s %s\n", i, (aux->estado == 'R') ? "Running" : "Stopped", aux->buffer); // escribe numero de trabajo, estado y la línea de mandato
-        aux = aux->next; // toma el siguiente valor del nodo
+    int i = 1;
+    job *aux = jobs_list->head;
+    while (aux != NULL) {
+        const char *estado_str;
+        if (aux->estado == 'R') {
+            estado_str = "Running";
+        } else {
+            estado_str = "Stopped";
+        }
+        printf("[%d] %s %s\n", i, estado_str,aux->buffer);
+        aux = aux->next;
         i++;
     }
 }
+
 
 void execute_bg(tline *line) {
     job *j = NULL; // puntero a trabajo
@@ -176,7 +181,7 @@ void execute_umask(tline *line){
             umask((mode_t)val);  // pone la máscara nueva
         }
     }
-    return; // --- CORRECCIÓN 3: Faltaba punto y coma ---
+    return;
 }
 
 void execute_man(tline *line, char *full_line_str){ 
@@ -240,7 +245,6 @@ void execute_man(tline *line, char *full_line_str){
                 if (line->redirect_output != NULL) { // mira si hay redirección de salida
                     fds = creat(line->redirect_output, 0644); // crea un fichero con unos permisos comunes rw-r--r--
                     if (fds < 0) { // comprueba si hay error
-                         // --- CORRECCIÓN 4 (b) ---
                         fprintf(stderr, "%s: Error. %s\n", line->redirect_output, strerror(errno)); 
                         exit(1); 
                     }
@@ -250,7 +254,6 @@ void execute_man(tline *line, char *full_line_str){
                 if (line->redirect_error != NULL) { // comprueba si hay redirección de error
                     fderr = creat(line->redirect_error, 0644); // crea un fichero con unos permisos comunes rw-r--r--
                     if (fderr < 0) { // comprueba si hay error
-                         // --- CORRECCIÓN 4 (c) ---
                         fprintf(stderr, "%s: Error. %s\n", line->redirect_error, strerror(errno)); 
                         exit(1); 
                     }
