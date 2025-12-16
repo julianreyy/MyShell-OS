@@ -33,6 +33,7 @@ void insert_job(pid_t pid, char *buffer, char estado) {
     n->estado = estado; // asigna el estado (R ó S)
     n->next = jobs_list->head; // el nodo apunta al primero de la lista
     jobs_list->head = n; // el nodo se convierte en el primero de la lista
+    return;
 }
 
 void elim_job(pid_t pid) {
@@ -51,6 +52,7 @@ void elim_job(pid_t pid) {
         aux = current; // el auxiliar pasa a ser el actual
         current = current->next; // el actual pasa a ser el siguiente nodo de la lista
     }
+    return;
 }
 
 job *get_job_by_index(int n) {
@@ -98,6 +100,7 @@ void handler(int sig) {
             }
         }
     }
+    return;
 }
 
 void execute_jobs() {
@@ -114,12 +117,12 @@ void execute_jobs() {
         aux = aux->next;
         i++;
     }
+    return;
 }
 
 
 void execute_bg(tline *line) {
     job *j = NULL; // puntero a trabajo
-    
     if (jobs_list->head == NULL) { // comprueba si hay lista de mandatos
         fprintf(stderr, "bg: no hay trabajos actuales\n");
         return;
@@ -141,6 +144,7 @@ void execute_bg(tline *line) {
     } else { // si no se encontró nada
         fprintf(stderr, "bg: no existe el mandato\n");
     }
+    return;
 }
 
 void execute_cd(tline *line){
@@ -161,6 +165,7 @@ void execute_cd(tline *line){
              printf("%s\n", cwd);
         }
     }
+    return;
 }
 
 void execute_umask(tline *line){
@@ -294,6 +299,7 @@ void execute_man(tline *line, char *full_line_str){
             wait(NULL);
         }
     }
+    return;
 }
 
 
@@ -325,14 +331,22 @@ int main() {
                     execute_jobs();
                 else if (strcmp(line->commands[0].argv[0], "bg") == 0) //comprueba que el mandato sea bg
                     execute_bg(line);
-                else if (strcmp(line->commands[0].argv[0], "exit") == 0) // comprueba si se quiere salir
-                    break;      // sale del bucle
+                else if (strcmp(line->commands[0].argv[0], "exit") == 0) {// comprueba si se quiere salir
+                    if (line->commands[0].argv[1] == NULL) { // comprueba si se da un código de salida
+                        free(jobs_list); // borra espacio de memoria dinámica
+                        exit(0); // termina la minishell
+                    }
+                    else {
+                        free(jobs_list); // borra espacio de memoria dinámica
+                        exit(atoi(line->commands[0].argv[1])); // termina con el código proporcionado
+                    }
+                }
                 else
                     execute_man(line, buffer); // en otro caso ejecuta función para mandatos generales
             }
         }
         printf("msh> ");
     }
-    free(jobs_list); //borra espacio de memoria dinámica
+    free(jobs_list); // borra espacio de memoria dinámica
     return 0;
 }
