@@ -12,14 +12,14 @@
 
 #define SIZE 512
 
-typedef struct job { // Define un nodo trabajo
+typedef struct job { // define un nodo trabajo
     pid_t pid;
     char buffer[1024]; // buffer de caracteres
     char estado; // estado del trabajo  R: Running S: Stopped
-    struct job *next; // Puntero al siguiente nodo de la lista
+    struct job *next; // puntero al siguiente nodo de la lista
 } job;
 
-typedef struct jobList { // Define la estructura de una lista de trabajos
+typedef struct jobList { // define la estructura de una lista de trabajos
     job *head; 
 } jobList;
 
@@ -36,13 +36,13 @@ void insert_job(pid_t pid, char *buffer, char estado) {
 }
 
 void elim_job(pid_t pid) {
-    job *current = jobs_list->head; //puntero auxiliar que empieza al principio de la lista
+    job *current = jobs_list->head; // puntero auxiliar que empieza al principio de la lista
     job *aux = NULL;
     while (current != NULL) {
-        if (current->pid == pid) { //si se encuentra el PID buscado
+        if (current->pid == pid) { // si se encuentra el PID buscado
             if (aux == NULL) { // comprueba si es el primer nodo de la lista
                 jobs_list->head = current->next;
-            } else { //si no es el primero
+            } else { // si no es el primero
                 aux->next = current->next; 
             }
             free(current); // libera memoria
@@ -73,9 +73,9 @@ job *get_job_by_index(int n) {
 void handler(int sig) {
     pid_t pid; 
     int status;
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) { //para recoger procesos hijos que hayan terminado
-        if (WIFEXITED(status) || WIFSIGNALED(status)) { // Comprueba si el proceso ha terminado de forma normal o ha terminado por una señal
-            elim_job(pid); // Borra el trabajo de la lista de jobs
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) { // para recoger procesos hijos que hayan terminado
+        if (WIFEXITED(status) || WIFSIGNALED(status)) { // comprueba si el proceso ha terminado de forma normal o ha terminado por una señal
+            elim_job(pid); // borra el trabajo de la lista de jobs
 
         }
     }
@@ -87,12 +87,12 @@ void execute_jobs() {
     job *aux = jobs_list->head;
     while (aux != NULL) {
         const char *estado_str;
-        if (aux->estado == 'R') { //Se comprueba de la lista todo el rato hasta el final si es R o S
+        if (aux->estado == 'R') { // se comprueba de la lista todo el rato hasta el final si es R o S
             estado_str = "Running";
         } else {
             estado_str = "Stopped";
         }
-        printf("[%d] %s %s\n", i, estado_str,aux->buffer); //Imprimir numero de proceso (no PID) y estado
+        printf("[%d] %s %s\n", i, estado_str,aux->buffer); // imprime numero de proceso, estado y línea del mandato
         aux = aux->next; 
         i++;
     }
@@ -128,15 +128,15 @@ void execute_bg(tline *line) {
 
 void execute_cd(tline *line){
     char *dir;
-    char cwd[1024]; // Buffer para la ruta
+    char cwd[1024]; // buffer para la ruta
     int entorno;
     if (line->commands[0].argc == 1) {
-        dir = getenv("HOME"); //si no hay nada de argumento es HOME
+        dir = getenv("HOME"); // si no hay nada de argumento es HOME
     } else { 
         dir = line->commands[0].argv[1]; 
     }
     entorno = chdir(dir); // cambia el directorio actual
-    if (entorno < 0) { //comprueba si devuelve error
+    if (entorno < 0) { // comprueba si devuelve error
         fprintf(stderr, "cd: No ha sido posible cambiar el directorio\n");
     } 
     else {
@@ -149,8 +149,8 @@ void execute_cd(tline *line){
 
 void execute_umask(tline *line){
     mode_t old;
-    char *end; // Puntero para control de errores en conversión
-    unsigned long val; //valor long positivo lo usamos para evitar errores
+    char *end; // puntero para control de errores en conversión
+    unsigned long val; // valor long positivo lo usamos para evitar errores
     if (line->commands[0].argv[1] == NULL) { // comprueba si no hay máscara de argumento
         old = umask(0); // llama a umask(0) para obtener la actual
         umask(old); // restaura la máscara original
@@ -198,14 +198,14 @@ void execute_man(tline *line, char *full_line_str){
                 signal(SIGINT, SIG_DFL); // reactiva CtrlC
                 signal(SIGTSTP, SIG_DFL); // reactiva CtrlZ
             } else {
-                signal(SIGINT, SIG_IGN); // Ignora CtrlC
-                signal(SIGTSTP, SIG_IGN); // Ignora CtrlZ
+                signal(SIGINT, SIG_IGN); // ignora CtrlC
+                signal(SIGTSTP, SIG_IGN); // ignora CtrlZ
             }
             if (npipes > 0) { // comprueba si hay tuberías
                 if (i == 0) { // comprueba si es el primer mandato
                     dup2(p[0][1], 1); // redirige la salida estándar al primer pipe
-                } else if (i == line->ncommands - 1) { //comprueba si es el último
-                    dup2(p[i-1][0], 0); //redirige la entrada del último pipe
+                } else if (i == line->ncommands - 1) { // comprueba si es el último
+                    dup2(p[i-1][0], 0); // redirige la entrada del último pipe
                 } else { // si es un mandato de en medio
                     dup2(p[i-1][0], 0); // lee del pipe anterior
                     dup2(p[i][1], 1); // escribe en el pipe siguiente
@@ -235,7 +235,7 @@ void execute_man(tline *line, char *full_line_str){
                     close(fds); // cierra el descriptor
                 }
                 if (line->redirect_error != NULL) { // comprueba si hay redirección de error
-                    fderr = creat(line->redirect_error, 0644); //se crea un fichero con unos permisos predeterminados
+                    fderr = creat(line->redirect_error, 0644); // se crea un fichero con unos permisos predeterminados
                     if (fderr < 0) { 
                         fprintf(stderr, "%s: Error. %s\n", line->redirect_error, strerror(errno)); 
                         exit(1); 
@@ -267,9 +267,9 @@ void execute_man(tline *line, char *full_line_str){
     } 
     else { // el mandato se lanzó a foreground
         waitpid(pid, &status, WUNTRACED); // espera hasta que el último hijo termine
-        if (WIFSTOPPED(status)) {   //comprueba si el hijo se detuvo con Ctrl+Z
+        if (WIFSTOPPED(status)) {   // comprueba si el hijo se detuvo con Ctrl+Z
             printf("\n[%d]+ Stopped %s\n", pid, full_line_str);
-            insert_job(pid, full_line_str, 'S'); //se añade a la lista como estado de Stopped
+            insert_job(pid, full_line_str, 'S'); // se añade a la lista como estado de Stopped
         }
         for (i = 0; i < line->ncommands - 1; i++) {
             wait(NULL);
@@ -294,20 +294,20 @@ int main() {
         if (strlen(buffer) > 0) { // si el buffer no está vacío
             size_t len = strlen(buffer);
             if (len > 0 && buffer[len - 1] == '\n') {
-                buffer[len - 1] = '\0'; //quitar salto de línea y acabar en /0 siempre
+                buffer[len - 1] = '\0'; // quitar salto de línea y acabar en /0 siempre
             }
 
             line = tokenize(buffer); // recopila info de la línea        
             if (line != NULL && line->ncommands > 0) {
-                if (strcmp(line->commands[0].argv[0], "cd") == 0) //si el mandato es cd
+                if (strcmp(line->commands[0].argv[0], "cd") == 0) // si el mandato es cd
                     execute_cd(line);
-                else if (strcmp(line->commands[0].argv[0], "umask") == 0) //si el mandato es umask
+                else if (strcmp(line->commands[0].argv[0], "umask") == 0) // si el mandato es umask
                     execute_umask(line);
-                else if (strcmp(line->commands[0].argv[0], "jobs") == 0) //si el mandato es jobs
+                else if (strcmp(line->commands[0].argv[0], "jobs") == 0) // si el mandato es jobs
                     execute_jobs();
-                else if (strcmp(line->commands[0].argv[0], "bg") == 0) //si el mandato es bg
+                else if (strcmp(line->commands[0].argv[0], "bg") == 0) // si el mandato es bg
                     execute_bg(line);
-                else if (strcmp(line->commands[0].argv[0], "exit") == 0) {//si el mandato es exit
+                else if (strcmp(line->commands[0].argv[0], "exit") == 0) {// si el mandato es exit
                     if (line->commands[0].argv[1] == NULL) { //  si no hay argumento junto exit
                         free(jobs_list); // borra espacio de memoria dinámica
                         exit(0); // termina la minishell
@@ -318,7 +318,7 @@ int main() {
                     }
                 }
                 else
-                    execute_man(line, buffer); //si no es un mandato de los de arriba se usa esto
+                    execute_man(line, buffer); // si no es un mandato de los de arriba se usa esto
             }
         }
         printf("msh> ");
